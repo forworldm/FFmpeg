@@ -1991,6 +1991,8 @@ typedef struct AVFormatContext {
      * - demuxing: Set by user
      */
     int recursion_limit;
+
+    char *latin1_override;
 } AVFormatContext;
 
 /**
