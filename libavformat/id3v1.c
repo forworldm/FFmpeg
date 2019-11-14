@@ -21,6 +21,8 @@
 
 #include "id3v1.h"
 #include "libavutil/dict.h"
+#include "libavutil/avstring.h"
+
 
 /* See Genre List at http://id3.org/id3v2.3.0 */
 const char * const ff_id3v1_genre_str[ID3v1_GENRE_MAX + 1] = {
@@ -244,8 +246,17 @@ static void get_string(AVFormatContext *s, const char *key,
     if (first_free_space)
         *first_free_space = '\0';
 
-    if (*str)
+    if (*str) {
+        if (s->latin1_override && *s->latin1_override) {
+            size_t str_len = (first_free_space ? first_free_space : q) - str;
+            char *str_utf8 = av_convert_to_utf8(str, str_len, s->latin1_override);
+            if (str_utf8) {
+                av_dict_set(&s->metadata, key, str_utf8, AV_DICT_DONT_STRDUP_VAL);
+                return;
+            }
+        }
         av_dict_set(&s->metadata, key, str, 0);
+    }
 }
 
 /**

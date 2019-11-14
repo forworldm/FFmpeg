@@ -33,6 +33,11 @@
 #include "error.h"
 #include "macros.h"
 
+#if CONFIG_ICONV
+#include <iconv.h>
+#endif
+
+
 int av_strstart(const char *str, const char *pfx, const char **ptr)
 {
     while (*pfx && *pfx == *str) {
@@ -457,4 +462,78 @@ int av_match_list(const char *name, const char *list, char separator)
     }
 
     return 0;
+}
+
+char *av_convert_to_utf8(const char *string, size_t length, const char *charset) {
+    if (!string)
+        return NULL;
+    if (!length)
+        return av_mallocz(1);
+
+#if CONFIG_ICONV
+    iconv_t cvt = iconv_open("UTF-8", charset);
+    if (cvt == (iconv_t) -1)
+        return NULL;
+
+    char *src_pos_ptr = (char *) string;
+    size_t src_left = length;
+
+    char *dst_ptr = av_malloc(FFMAX(length, 10));
+    size_t dst_capacity = length;
+    char *dst_pos_ptr = dst_ptr;
+    size_t dst_left = dst_capacity;
+
+    size_t cvt_ret;
+    for (;;) {
+        int cvt_clear = 0;
+        if (src_left) {
+            cvt_ret = iconv(cvt, &src_pos_ptr, &src_left, &dst_pos_ptr, &dst_left);
+        } else {
+            cvt_clear = 1;
+            cvt_ret = iconv(cvt, NULL, NULL, &dst_pos_ptr, &dst_left);
+        }
+        if (cvt_ret == (size_t) -1) {
+            if (errno == E2BIG) {
+                size_t dst_offset = dst_pos_ptr - dst_ptr;
+                size_t growth = dst_capacity / 2;
+                char *new_ptr = av_realloc(dst_ptr, dst_capacity + growth);
+                if (!new_ptr)
+                    break;
+                dst_ptr = new_ptr;
+                dst_capacity += growth;
+                dst_pos_ptr = dst_ptr + dst_offset;
+                dst_left += growth;
+            } else {
+                break;
+            }
+        } else if (cvt_clear) {
+            break;
+        }
+    }
+
+    iconv_close(cvt);
+
+    if (cvt_ret != (size_t) -1) {
+        if (dst_pos_ptr == dst_ptr) {
+            *dst_pos_ptr = '\0';
+        } else if (*(dst_pos_ptr - 1) != '\0') {
+            if (!dst_left) {
+                size_t dst_offset = dst_pos_ptr - dst_ptr;
+                char *new_ptr = av_realloc(dst_ptr, dst_capacity + 1);
+                if (!new_ptr) {
+                    av_free(dst_ptr);
+                    return NULL;
+                }
+                dst_ptr = new_ptr;
+                dst_pos_ptr = dst_ptr + dst_offset;
+            }
+            *dst_pos_ptr = '\0';
+        }
+        return dst_ptr;
+    }
+
+    av_free(dst_ptr);
+#endif
+
+    return NULL;
 }

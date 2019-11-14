@@ -1040,7 +1040,7 @@ static void new_data_packet(const uint8_t *buffer, int len, AVPacket *pkt)
     pkt->size = len;
 }
 
-static int timed_id3_update_metadata(AVStream *s, AVPacket *pkt)
+static int timed_id3_update_metadata(AVFormatContext *avf, AVStream *s, AVPacket *pkt)
 {
     FFIOContext id3_buf;
     ID3v2ExtraMeta *extra_meta = NULL;
@@ -1048,7 +1048,7 @@ static int timed_id3_update_metadata(AVStream *s, AVPacket *pkt)
     int ret = 0;
 
     ffio_init_read_context(&id3_buf, pkt->data, pkt->size);
-    ff_id3v2_read_dict(&id3_buf.pub, &metadata, ID3v2_DEFAULT_MAGIC, &extra_meta);
+    ff_id3v2_read_dict(avf, &id3_buf.pub, &metadata, ID3v2_DEFAULT_MAGIC, &extra_meta);
     ret = ff_id3v2_parse_priv_dict(&metadata, extra_meta);
     ff_id3v2_free_extra_meta(&extra_meta);
 
@@ -1119,7 +1119,7 @@ static int new_pes_packet(PESContext *pes, AVPacket *pkt)
     *sd = pes->stream_id;
 
     if (pes->st->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
-        int ret = timed_id3_update_metadata(pes->st, pkt);
+        int ret = timed_id3_update_metadata(pes->stream, pes->st, pkt);
         if (ret < 0)
             return ret;
     }

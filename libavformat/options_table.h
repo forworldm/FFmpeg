@@ -108,6 +108,7 @@ static const AVOption avformat_options[] = {
 {"max_probe_packets", "Maximum number of packets to probe a codec", OFFSET(max_probe_packets), AV_OPT_TYPE_INT, { .i64 = 2500 }, 0, INT_MAX, D },
 {"duration_probesize", "Maximum number of bytes to probe the durations of the streams in estimate_timings_from_pts", OFFSET(duration_probesize), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, (double)INT64_MAX, D},
 {"recursion_limit", "Maximum number of times a demuxer can recursively be opened", OFFSET(recursion_limit), AV_OPT_TYPE_INT, {.i64 = 10 }, 0, INT_MAX, D},
+{"latin1_override", "use specified charset for Latin-1 text in ID3v2 metadata", OFFSET(latin1_override), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, D},
 {NULL},
 };
 

@@ -270,7 +270,7 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
     case ID3v2_ENCODING_ISO8859:
         while (left && ch) {
             ch = avio_r8(pb);
-            PUT_UTF8(ch, tmp, avio_w8(dynbuf, tmp);)
+            avio_w8(dynbuf, ch);
             left--;
         }
         break;
@@ -324,11 +324,21 @@ end:
     if (ch)
         avio_w8(dynbuf, 0);
 
-    dynsize = avio_close_dyn_buf(dynbuf, dst);
+    uint8_t *str;
+    dynsize = avio_close_dyn_buf(dynbuf, &str);
     if (dynsize <= 0) {
         av_freep(dst);
         return AVERROR(ENOMEM);
     }
+    if (encoding == ID3v2_ENCODING_ISO8859 && s && s->latin1_override && *s->latin1_override) {
+        char *str_utf8 = av_convert_to_utf8((char *) str, (size_t) dynsize, s->latin1_override);
+        if (str_utf8) {
+            av_free(str);
+            str = (uint8_t *) str_utf8;
+        }
+    }
+
+    *dst = str;
     *maxread = left;
 
     return 0;
@@ -1170,10 +1180,10 @@ static void id3v2_read_internal(AVIOContext *pb, AVDictionary **metadata,
         *extra_metap = extra_meta.head;
 }
 
-void ff_id3v2_read_dict(AVIOContext *pb, AVDictionary **metadata,
+void ff_id3v2_read_dict(AVFormatContext *s, AVIOContext *pb, AVDictionary **metadata,
                         const char *magic, ID3v2ExtraMeta **extra_meta)
 {
-    id3v2_read_internal(pb, metadata, NULL, magic, extra_meta, 0);
+    id3v2_read_internal(pb, metadata, s, magic, extra_meta, 0);
 }
 
 void ff_id3v2_read(AVFormatContext *s, const char *magic,
