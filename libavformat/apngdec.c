@@ -217,6 +217,7 @@ static int apng_read_header(AVFormatContext *s)
             acTL_found = 1;
             ctx->num_frames = AV_RB32(st->codecpar->extradata + ret + 8);
             ctx->num_play   = AV_RB32(st->codecpar->extradata + ret + 12);
+            st->nb_frames   = ctx->num_frames;
             av_log(s, AV_LOG_DEBUG, "num_frames: %"PRIu32", num_play: %"PRIu32"\n",
                                     ctx->num_frames, ctx->num_play);
             break;
