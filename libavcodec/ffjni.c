@@ -65,12 +65,6 @@ JNIEnv *ff_jni_get_env(void *log_ctx)
         goto done;
     }
 
-    pthread_once(&once, jni_create_pthread_key);
-
-    if ((env = pthread_getspecific(current_env)) != NULL) {
-        goto done;
-    }
-
     ret = (*java_vm)->GetEnv(java_vm, (void **)&env, JNI_VERSION_1_6);
     switch(ret) {
     case JNI_EDETACHED:
@@ -78,6 +72,7 @@ JNIEnv *ff_jni_get_env(void *log_ctx)
             av_log(log_ctx, AV_LOG_ERROR, "Failed to attach the JNI environment to the current thread\n");
             env = NULL;
         } else {
+            pthread_once(&once, jni_create_pthread_key);
             pthread_setspecific(current_env, env);
         }
         break;
