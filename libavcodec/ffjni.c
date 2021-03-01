@@ -23,6 +23,7 @@
 #include <jni.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <sys/prctl.h>
 
 #include "libavutil/bprint.h"
 #include "libavutil/error.h"
@@ -67,15 +68,18 @@ JNIEnv *ff_jni_get_env(void *log_ctx)
 
     ret = (*java_vm)->GetEnv(java_vm, (void **)&env, JNI_VERSION_1_6);
     switch(ret) {
-    case JNI_EDETACHED:
-        if ((*java_vm)->AttachCurrentThread(java_vm, &env, NULL) != 0) {
+    case JNI_EDETACHED: {
+        char name[16] = {0};
+        prctl(PR_GET_NAME, name);
+        JavaVMAttachArgs args = {.version = JNI_VERSION_1_6, .name = name};
+        if ((*java_vm)->AttachCurrentThread(java_vm, &env, &args) != 0) {
             av_log(log_ctx, AV_LOG_ERROR, "Failed to attach the JNI environment to the current thread\n");
             env = NULL;
         } else {
             pthread_once(&once, jni_create_pthread_key);
             pthread_setspecific(current_env, env);
         }
-        break;
+    }   break;
     case JNI_OK:
         break;
     case JNI_EVERSION:
