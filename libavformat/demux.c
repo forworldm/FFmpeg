@@ -165,8 +165,8 @@ static int init_input(AVFormatContext *s, const char *filename,
     if (s->pb) {
         s->flags |= AVFMT_FLAG_CUSTOM_IO;
         if (!s->iformat)
-            return av_probe_input_buffer2(s->pb, &s->iformat, filename,
-                                          s, 0, s->format_probesize);
+            return av_probe_input_buffer2_ex(s->pb, &s->iformat, filename,
+                                          s, 0, s->format_probesize, s->format_whitelist);
         else if (s->iformat->flags & AVFMT_NOFILE)
             av_log(s, AV_LOG_WARNING, "Custom AVIOContext makes no sense and "
                                       "will be ignored with AVFMT_NOFILE format.\n");
@@ -182,8 +182,8 @@ static int init_input(AVFormatContext *s, const char *filename,
 
     if (s->iformat)
         return 0;
-    return av_probe_input_buffer2(s->pb, &s->iformat, filename,
-                                  s, 0, s->format_probesize);
+    return av_probe_input_buffer2_ex(s->pb, &s->iformat, filename,
+                                  s, 0, s->format_probesize, s->format_whitelist);
 }
 
 static int codec_close(FFStream *sti);
