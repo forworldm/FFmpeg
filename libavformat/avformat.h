@@ -2253,6 +2253,16 @@ const AVInputFormat *av_probe_input_format2(const AVProbeData *pd,
 const AVInputFormat *av_probe_input_format3(const AVProbeData *pd,
                                             int is_opened, int *score_ret);
 
+int av_probe_input_buffer2_ex(AVIOContext *pb, const AVInputFormat **fmt,
+                              const char *url, void *logctx,
+                              unsigned int offset, unsigned int max_probe_size,
+                              const char *format_whitelist);
+
+int av_probe_input_buffer_ex(AVIOContext *pb, const AVInputFormat **fmt,
+                             const char *filename, void *logctx,
+                             unsigned int offset, unsigned int max_probe_size,
+                             const char *format_whitelist);
+
 /**
  * Probe a bytestream to determine the input format. Each time a probe returns
  * with a score that is too low, the probe buffer size is increased and another

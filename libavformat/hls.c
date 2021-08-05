@@ -2264,6 +2264,7 @@ static int hls_read_header(AVFormatContext *s)
     HLSContext *c = s->priv_data;
     int ret = 0, i;
     int64_t highest_cur_seq_no = 0;
+    AVDictionaryEntry *format_whitelist;
 
     c->ctx                = s;
     c->interrupt_callback = &s->interrupt_callback;
@@ -2272,6 +2273,8 @@ static int hls_read_header(AVFormatContext *s)
     c->first_timestamp = AV_NOPTS_VALUE;
     c->first_timestamp_pls = NULL;
     c->cur_timestamp = AV_NOPTS_VALUE;
+
+    format_whitelist = av_dict_get(c->seg_format_opts, "format_whitelist", NULL, 0);
 
     if ((ret = ffio_copy_url_options(s->pb, &c->avio_opts)) < 0)
         return ret;
@@ -2470,7 +2473,8 @@ static int hls_read_header(AVFormatContext *s)
             pls->ctx->max_analyze_duration = s->max_analyze_duration > 0 ? s->max_analyze_duration : 4 * AV_TIME_BASE;
             pls->ctx->interrupt_callback = s->interrupt_callback;
             url = av_strdup(pls->segments[0]->url);
-            ret = av_probe_input_buffer(&pls->pb.pub, &in_fmt, url, NULL, 0, 0);
+            ret = av_probe_input_buffer_ex(&pls->pb.pub, &in_fmt, url, NULL, 0, 0,
+                                           format_whitelist ? format_whitelist->value : NULL);
 
             for (int n = 0; n < pls->n_segments; n++)
                 if (ret >= 0)
