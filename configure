@@ -4813,7 +4813,7 @@ if disabled autodetect; then
 
     # Unless iconv is explicitly disabled by the user, we still want to probe
     # for the iconv from the libc.
-    disabled iconv || enable libc_iconv
+    # disabled iconv || enable libc_iconv
 
     disable_weak $EXTERNAL_AUTODETECT_LIBRARY_LIST
     disable_weak $HWACCEL_AUTODETECT_LIBRARY_LIST
