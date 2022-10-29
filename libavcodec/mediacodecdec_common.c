@@ -249,26 +249,30 @@ static void ff_mediacodec_dec_ref(MediaCodecDecContext *s)
     atomic_fetch_add(&s->refcount, 1);
 }
 
+static void ff_mediacodec_del_codec(MediaCodecDecContext *s) {
+    if (s->codec) {
+        ff_AMediaCodec_delete(s->codec);
+        s->codec = NULL;
+    }
+
+    if (s->format) {
+        ff_AMediaFormat_delete(s->format);
+        s->format = NULL;
+    }
+
+    if (s->surface) {
+        ff_mediacodec_surface_unref(s->surface, NULL);
+        s->surface = NULL;
+    }
+}
+
 static void ff_mediacodec_dec_unref(MediaCodecDecContext *s)
 {
     if (!s)
         return;
 
     if (atomic_fetch_sub(&s->refcount, 1) == 1) {
-        if (s->codec) {
-            ff_AMediaCodec_delete(s->codec);
-            s->codec = NULL;
-        }
-
-        if (s->format) {
-            ff_AMediaFormat_delete(s->format);
-            s->format = NULL;
-        }
-
-        if (s->surface) {
-            ff_mediacodec_surface_unref(s->surface, NULL);
-            s->surface = NULL;
-        }
+        ff_mediacodec_del_codec(s);
 
         av_freep(&s->codec_name);
         av_freep(&s);
@@ -1140,6 +1144,11 @@ int ff_mediacodec_dec_close(AVCodecContext *avctx, MediaCodecDecContext *s)
         } else {
             av_log(avctx, AV_LOG_DEBUG, "Not stopping MediaCodec (there are buffers pending)\n");
         }
+    }
+
+    if (!s->delay_flush) {
+        atomic_fetch_add(&s->serial, 1);
+        ff_mediacodec_del_codec(s);
     }
 
     ff_mediacodec_dec_unref(s);
