@@ -3014,7 +3014,7 @@ static int hls_probe(const AVProbeData *p)
             av_strcasecmp(p->mime_type, "application/x-mpegurl")
             );
 
-        if (!mime_ok &&
+        if (!mime_ok && 0 &&
             !mime_x &&
             !av_match_ext    (p->filename, "m3u8,m3u") &&
              ff_match_url_ext(p->filename, "m3u8,m3u") <= 0) {
