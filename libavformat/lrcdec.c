@@ -129,13 +129,28 @@ static int lrc_probe(const AVProbeData *p)
     if(!memcmp(p->buf, "\xef\xbb\xbf", 3)) { // Skip UTF-8 BOM header
         offset += 3;
     }
-    while(p->buf[offset] == '\n' || p->buf[offset] == '\r') {
+    for (;;) {
+        while(p->buf[offset] == '\n' || p->buf[offset] == '\r') {
+            offset++;
+        }
+        if(p->buf[offset] != '[') {
+            return 0;
+        }
         offset++;
+        if (!memcmp(p->buf + offset, "id:", 3) ||
+            !memcmp(p->buf + offset, "ml:", 3) ||
+            !memcmp(p->buf + offset, "ver:", 4)) {
+            for (;;) {
+                if (offset >= p->buf_size)
+                    return 5;
+                if (p->buf[offset] == '\n' || p->buf[offset] == '\r')
+                    break;
+                offset++;
+            }
+        } else {
+            break;
+        }
     }
-    if(p->buf[offset] != '[') {
-        return 0;
-    }
-    offset++;
     // Common metadata item but not exist in ff_lrc_metadata_conv
     if(!memcmp(p->buf + offset, "offset:", 7)) {
         return 40;
