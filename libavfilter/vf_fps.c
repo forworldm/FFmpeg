@@ -264,15 +264,17 @@ static int read_frame(AVFilterContext *ctx, FPSContext *s, AVFilterLink *inlink,
 static int write_frame(AVFilterContext *ctx, FPSContext *s, AVFilterLink *outlink, int *again)
 {
     AVFrame *frame;
+    int only_single_frame = 0;
 
     av_assert1(s->frames_count == 2 || (s->status && s->frames_count == 1));
 
     /* We haven't yet determined the pts of the first frame */
     if (s->next_pts == AV_NOPTS_VALUE) {
+        only_single_frame = s->status != 0;
         if (s->frames[0]->pts != AV_NOPTS_VALUE) {
             s->next_pts = s->frames[0]->pts;
             av_log(ctx, AV_LOG_VERBOSE, "Set first pts to %"PRId64"\n", s->next_pts);
-        } else {
+        } else if (!only_single_frame) {
             av_log(ctx, AV_LOG_WARNING, "Discarding initial frame(s) with no "
                    "timestamp.\n");
             frame = shift_frame(ctx, s);
@@ -287,8 +289,9 @@ static int write_frame(AVFilterContext *ctx, FPSContext *s, AVFilterLink *outlin
      *   as the next output frame, then drop the first buffered frame.
      * - If we have status (EOF) set, drop frames when we hit the
      *   status timestamp. */
-    if ((s->frames_count == 2 && s->frames[1]->pts <= s->next_pts) ||
-        (s->status            && s->status_pts     <= s->next_pts)) {
+    if (!only_single_frame &&
+        ((s->frames_count == 2 && s->frames[1]->pts <= s->next_pts) ||
+         (s->status            && s->status_pts     <= s->next_pts))) {
 
         frame = shift_frame(ctx, s);
         av_frame_free(&frame);
@@ -302,12 +305,14 @@ static int write_frame(AVFilterContext *ctx, FPSContext *s, AVFilterLink *outlin
             return AVERROR(ENOMEM);
         // Make sure Closed Captions will not be duplicated
         ff_ccfifo_inject(&s->cc_fifo, frame);
-        frame->pts = s->next_pts++;
+        frame->pts = s->next_pts;
         frame->duration = 1;
 
         av_log(ctx, AV_LOG_DEBUG, "Writing frame with pts %"PRId64" to pts %"PRId64"\n",
                s->frames[0]->pts, frame->pts);
         s->cur_frame_out++;
+        if (s->next_pts != AV_NOPTS_VALUE)
+            s->next_pts++;
         *again = 1;
         return ff_filter_frame(outlink, frame);
     }
