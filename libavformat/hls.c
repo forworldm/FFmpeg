@@ -2374,8 +2374,6 @@ static int hls_read_header(AVFormatContext *s)
         highest_cur_seq_no = FFMAX(highest_cur_seq_no, pls->cur_seq_no);
     }
 
-    av_dict_set(&c->seg_format_opts, "prefer_hls_mpegts_pts", "1", 0);
-
     /* Open the demuxer for each playlist */
     for (i = 0; i < c->n_playlists; i++) {
         struct playlist *pls = c->playlists[i];
