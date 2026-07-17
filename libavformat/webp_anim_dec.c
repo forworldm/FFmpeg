@@ -241,6 +241,17 @@ static int webp_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
     int loglevel = explode ? AV_LOG_ERROR : AV_LOG_WARNING;
     while (1) {
         int64_t offset = avio_tell(pb);
+
+        if (offset < ctx->first_anmf_offset) {
+            ret = avio_seek(pb, ctx->first_anmf_offset, SEEK_SET);
+            if (ret < 0)
+                return ret;
+            offset = ctx->first_anmf_offset;
+        }
+        if (offset == ctx->first_anmf_offset) {
+            ctx->cur_frame = 0;
+        }
+
         uint32_t fourcc = avio_rl32(pb);
         uint32_t size = avio_rl32(pb);
 
@@ -278,6 +289,7 @@ static int webp_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (duration <= ctx->min_delay)
                 duration = ctx->default_delay;
             pkt->duration = FFMIN(duration, ctx->max_delay);
+            pkt->pos = offset;
             return ret;
         case MKTAG('E', 'X', 'I', 'F'):
             if (ctx->has_exif) {
