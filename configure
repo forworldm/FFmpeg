@@ -6323,7 +6323,7 @@ link_dir(){
 source_link="$source_path"
 if [ "$source_path" != "." ] && [ "$source_path" != "./src" ] && ([ ! -d src ] || [ -L src ]); then
     [ -e src ] && rm src
-    link_dir "$source_path" src && [ -L src ] && test_cpp -I. <<EOF && source_link=src
+    link_dir "$source_path/" src && [ -L src ] && test_cpp -I. <<EOF && source_link=src
 #include "src/libavutil/version_major.h"
 EOF
     [ "$source_link" = src ] || rm -rf src
